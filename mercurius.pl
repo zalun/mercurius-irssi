@@ -81,11 +81,11 @@ sub set_token {
 	my $valid = 0;
 	# validate token
 	# send notification
+	Irssi::settings_set_str('mercurius_token', $token);
+	Irssi::settings_set_bool('mercurius_enabled', 1);
+	Irssi::signal_emit('setup changed');
 	my $response = notify('Registered to receive notifications');
 	if ($response->{success}) {
-		Irssi::settings_set_str('mercurius_token', $token);
-		Irssi::settings_set_bool('mercurius_enabled', 1);
-		Irssi::signal_emit('setup changed');
 		print 'Mercurius token set. Use /SAVE command to make it permanent.';
 	} else {
 		# if 404 token is invalid
@@ -168,6 +168,7 @@ sub notify {
 		if (not $response->{success}) {
 			print 'DEBUG: Mercurius notify failed. Status: ' . $response->{status};
 		}
+		return $response;
 	}
 }
 
