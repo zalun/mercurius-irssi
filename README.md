@@ -4,6 +4,15 @@ Sends notifications to Mercurius [1] server when mentioned in channel.
 
 [1] https://github.com/marco-c/mercurius
 
+## Install
+
+* Copy *mercurius.pl* into *~/.irssi/scripts*
+* Link the script to make it run on start *ln -fs ~/.irssi/script/mercurius.pl ~/.irssi/scripts/autorun/mercurius.pl*
+* Run Irssi
+* Open Mercurius site and get the token
+* In Irssi run a command */mercurius set_token TOKEN* (a notification should appear)
+
+
 ## Usage
 
 ### /mercurius set_token SOMETOKEN
