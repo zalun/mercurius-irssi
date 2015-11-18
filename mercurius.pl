@@ -34,11 +34,12 @@ $VERSION = '0.0.1';
 
 my $token;
 my $enabled;
+my $host;
 
 # register settings
 Irssi::settings_add_str("mercurius", "mercurius_token", "");
 Irssi::settings_add_bool("mercurius", "mercurius_enabled", 0);
-Irssi::settings_add_host("mercurius", "mercurius_host", 'http://localhost:4000');
+Irssi::settings_add_str("mercurius", "mercurius_host", 'http://localhost:4000');
 
 #
 #   reload settings after change
@@ -144,7 +145,7 @@ sub send_notification {
 		my ($text) = @_;
 		# FIXME: there is probably a better way to get the irssi-dir...
 		open(FILE, ">>$ENV{HOME}/.irssi/fnotify");
-		print FILE $token . ' --- ' . $text . "\n";
+		print FILE $host . ', ' . $token . "\n" . $text . "\n\n";
 		close(FILE);
 	}
 }
