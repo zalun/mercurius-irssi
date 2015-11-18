@@ -110,6 +110,8 @@ sub start {
 		# send a message saying that sending notifications is restored
 		Irssi::signal_emit('setup changed');
 		print 'Mercurius restarted';
+	} else {
+		print 'DEBUG: Mercurius already enabled';
 	}
 }
 
@@ -156,13 +158,16 @@ sub notify {
 		my $http = HTTP::Tiny->new();
 		my $data = '{"token": "' . $token . '","payload": {"title": "IRSSI", "body": "'.$text.'"}}';
 		print 'DEBUG: notify ' . $url . ', ' . $token . ', ' . $data;
-		return $http->post($url, {
+		my $response = $http->post($url, {
 				content => $data,
 				headers => {
 	   				"Content-Type" => "application/json",
 	  			}
 			}
 		);
+		if (not $response->{success}) {
+			print 'DEBUG: Mercurius notify failed. Status: ' . $response->{status};
+		}
 	}
 }
 
