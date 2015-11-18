@@ -154,14 +154,15 @@ sub notify {
 		# print FILE $host . ', ' . $token . "\n" . $text . "\n\n";
 		# close(FILE);
 		my $http = HTTP::Tiny->new();
-		my %data = (
-			token => $token,
-			payload => (
-			   title => 'IRSSI',
-				body => $text
-			)
+		my $data = '{"token": "' . $token . '","payload": {"title": "IRSSI", "body": "'.$text.'"}}';
+		print 'DEBUG: notify ' . $url . ', ' . $token . ', ' . $data;
+		return $http->post($url, {
+				content => $data,
+				headers => {
+	   				"Content-Type" => "application/json",
+	  			}
+			}
 		);
-		return $http->post($url, \%data);
 	}
 }
 
