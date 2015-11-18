@@ -1,4 +1,5 @@
 use strict;
+use HTTP::Tiny;
 use vars qw($VERSION %IRSSI);
 
 use Irssi;
@@ -80,12 +81,16 @@ sub set_token {
 	my $valid = 0;
 	# validate token
 	# send notification
-	# if 404 token is invalid
-	# XXX assume it's valid
 	Irssi::settings_set_str('mercurius_token', $token);
 	Irssi::settings_set_bool('mercurius_enabled', 1);
 	Irssi::signal_emit('setup changed');
-	print 'Mercurius token set. Use /SAVE command to make it permanent.';
+	my $response = notify('Registered to receive notifications');
+	if ($response->{success}) {
+		print 'Mercurius token set. Use /SAVE command to make it permanent.';
+	} else {
+		# if 404 token is invalid
+		print 'Mercurius token is INVALID.';
+	}
 }
 
 #
@@ -105,6 +110,8 @@ sub start {
 		# send a message saying that sending notifications is restored
 		Irssi::signal_emit('setup changed');
 		print 'Mercurius restarted';
+	} else {
+		print 'DEBUG: Mercurius already enabled';
 	}
 }
 
@@ -117,7 +124,7 @@ sub priv_msg {
 		#filewrite($nick . ' ' . $msg);
 		#my $test = Dumper($server);
 		my $network = $server->{tag};
-		send_notification('' . $network . ' ' . $nick . ' ' . $msg);
+		notify('' . $network . ' ' . $nick . ' ' . $msg);
 	}
 }
 
@@ -132,7 +139,7 @@ sub hilight {
 			#my $test = Dumper($dest);
 			my $server = $dest->{server};
 			my $network = $server->{tag};
-			send_notification($network . ' ' . $dest->{target} . ' ' . $stripped);
+			my $response = notify($network . ' ' . $dest->{target} . ' ' . $stripped);
 		}
 	}
 }
@@ -140,13 +147,28 @@ sub hilight {
 #
 #	write to file
 #
-sub send_notification {
+sub notify {
 	if ($enabled) {
 		my ($text) = @_;
+		my $url = $host . '/notify';
 		# FIXME: there is probably a better way to get the irssi-dir...
-		open(FILE, ">>$ENV{HOME}/.irssi/fnotify");
-		print FILE $host . ', ' . $token . "\n" . $text . "\n\n";
-		close(FILE);
+		# open(FILE, ">>$ENV{HOME}/.irssi/fnotify");
+		# print FILE $host . ', ' . $token . "\n" . $text . "\n\n";
+		# close(FILE);
+		my $http = HTTP::Tiny->new();
+		my $data = '{"token": "' . $token . '","payload": {"title": "IRSSI", "body": "'.$text.'"}}';
+		print 'DEBUG: notify ' . $url . ', ' . $token . ', ' . $data;
+		my $response = $http->post($url, {
+				content => $data,
+				headers => {
+	   				"Content-Type" => "application/json",
+	  			}
+			}
+		);
+		if (not $response->{success}) {
+			print 'DEBUG: Mercurius notify failed. Status: ' . $response->{status};
+		}
+		return $response;
 	}
 }
 
