@@ -29,5 +29,10 @@ sets *mercurius_enabled* to false
 ### /mercurius start
 sets *mercurius_enabled* to true
 
+### /mercurius set_intense 0/1
+switches the intense mode (default 0)
+With intense mode on all of the notifications are sent.
+Otherwise (default) if user is in active private window only the first message from that window will send a notification.
+
 ### on mention or private message
 sends a notification to the mercurius server if *mercurius_enabled* is true
