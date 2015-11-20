@@ -36,11 +36,16 @@ $VERSION = '0.0.1';
 my $token;
 my $enabled;
 my $host;
+my $intense;
+# check if message was already sent
+# reset every time window is changed
+my $priv_notified;
 
 # register settings
 Irssi::settings_add_str("mercurius", "mercurius_token", "");
 Irssi::settings_add_bool("mercurius", "mercurius_enabled", 0);
 Irssi::settings_add_str("mercurius", "mercurius_host", 'http://localhost:4000');
+Irssi::settings_add_int("mercurius", "mercurius_intense", 0);
 
 #
 #   reload settings after change
@@ -49,6 +54,7 @@ sub reload_settings {
 	$token = Irssi::settings_get_str('mercurius_token');
 	$enabled = Irssi::settings_get_bool('mercurius_enabled');
 	$host = Irssi::settings_get_str('mercurius_host');
+	$intense = Irssi::settings_get_int('mercurius_intense');
 	if (not $enabled) {
 		print 'Mercurius notifications are stopped.';
 	}
@@ -94,6 +100,19 @@ sub set_token {
 }
 
 #
+#	set intensity
+#	0 - notify about only first message from active window
+#	1 - notify about every message
+#
+sub set_intense {
+	my ($value) = @_;
+	Irssi::settings_set_int('mercurius_intense', $value);
+	Irssi::signal_emit('setup changed');
+}
+
+
+
+#
 #	stop sending notifications
 #
 sub stop {
@@ -111,8 +130,15 @@ sub start {
 		Irssi::signal_emit('setup changed');
 		print 'Mercurius restarted';
 	} else {
-		print 'DEBUG: Mercurius already enabled';
+		print 'Mercurius is already enabled';
 	}
+}
+
+#
+#	resets the $priv_notified every time window is changed
+#
+sub reset_counter {
+	$priv_notified = 0;
 }
 
 #
@@ -120,11 +146,17 @@ sub start {
 #
 sub priv_msg {
 	if ($enabled) {
-		my ($server, $msg, $nick, $address, $target) = @_;
-		#filewrite($nick . ' ' . $msg);
-		#my $test = Dumper($server);
-		my $network = $server->{tag};
-		notify('' . $network . ' ' . $nick . ' ' . $msg);
+		my ($server, $msg, $nick, $address) = @_;
+		my @winitems = Irssi::active_win()->items();
+		my $win = @winitems[0];
+		# check if current window is the private message 
+		my $in_active_private = ($win->{type} eq 'QUERY' and $win->{name} eq $nick)? 1 : 0; 
+		# if so show only the first message depending on intense setting
+		if ($in_active_private and not $intense and $priv_notified) {
+			return;
+		}
+		$priv_notified = 1;
+		notify('' . $server->{tag} . ' ' . $nick . ' ' . $msg);
 	}
 }
 
@@ -135,11 +167,8 @@ sub hilight {
 	if ($enabled) {
 		my ($dest, $text, $stripped) = @_;
 		if ($dest->{level} & MSGLEVEL_HILIGHT) {
-			#filewrite($dest->{target} . ' ' . $stripped);
-			#my $test = Dumper($dest);
 			my $server = $dest->{server};
-			my $network = $server->{tag};
-			my $response = notify($network . ' ' . $dest->{target} . ' ' . $stripped);
+			my $response = notify($server->{tag} . ':' . $dest->{target} . ' ' . $stripped);
 		}
 	}
 }
@@ -151,14 +180,9 @@ sub notify {
 	if ($enabled) {
 		my ($text) = @_;
 		my $url = $host . '/notify';
-		# FIXME: there is probably a better way to get the irssi-dir...
-		# open(FILE, ">>$ENV{HOME}/.irssi/fnotify");
-		# print FILE $host . ', ' . $token . "\n" . $text . "\n\n";
-		# close(FILE);
 		my $http = HTTP::Tiny->new();
 		my $data = '{"token": "' . $token . '","payload": {"title": "IRSSI", "body": "'.$text.'"}}';
-		print 'DEBUG: notify ' . $url . ', ' . $token . ', ' . $data;
-		my $response = $http->post($url, {
+		my $response = $http->request('POST', $url, {
 				content => $data,
 				headers => {
 	   				"Content-Type" => "application/json",
@@ -166,7 +190,7 @@ sub notify {
 			}
 		);
 		if (not $response->{success}) {
-			print 'DEBUG: Mercurius notify failed. Status: ' . $response->{status};
+			print 'Mercurius notify failed. Status: ' . $response->{status};
 		}
 		return $response;
 	}
@@ -176,16 +200,16 @@ sub notify {
 #	manage commands
 #	/mercurius command attribute list
 #
-my $commands="set_token set_host start stop";
+my $commands="set_token set_host start stop set_intense";
 sub command {
-	my ($argument_string, $server_obj, $window_item_obj) = @_;
+	my ($argument_string, $server, $window) = @_;
 	my ($command_name, @arguments) = split(' ', $argument_string);
-	if (index($commands, $command_name) == -1) {
-		print "Mercurius ERROR: No such method: " . $command_name;
+	if (not $command_name or index($commands, $command_name) == -1) {
+		print 'Mercurius ERROR: No such method: "' . $command_name . '"';
 		return;
 	}
 	my $command = \&$command_name;
-	&$command(@arguments);
+	&$command(@arguments, $server, $window);
 }
 
 reload_settings();
@@ -196,6 +220,7 @@ reload_settings();
 Irssi::signal_add_last("message private", "priv_msg");
 Irssi::signal_add_last("print text", "hilight");
 Irssi::signal_add('setup changed', "reload_settings");
+Irssi::signal_add('window changed', "reset_counter");
 
 #
 #	bind main command
