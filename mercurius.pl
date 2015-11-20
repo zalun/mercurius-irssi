@@ -7,7 +7,7 @@ $VERSION = '0.0.1';
 %IRSSI = (
 	name => 'mercurius',
 	authors => 'Piotr Zalewa',
-	contact => 'https://piotr.zalewa.info/contact/',
+	contact => 'zalun@mozilla.com',
 	url => 'https://piotr.zalewa.info/',
 	description => 'Send mentiones to mercurius notification server.',
 	license => 'MIT',
@@ -44,7 +44,7 @@ my $priv_notified;
 # register settings
 Irssi::settings_add_str("mercurius", "mercurius_token", "");
 Irssi::settings_add_bool("mercurius", "mercurius_enabled", 0);
-Irssi::settings_add_str("mercurius", "mercurius_host", 'http://localhost:4000');
+Irssi::settings_add_str("mercurius", "mercurius_host", 'https://mozcurius.herokuapp.com');
 Irssi::settings_add_int("mercurius", "mercurius_intense", 0);
 
 #
