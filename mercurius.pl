@@ -1,12 +1,15 @@
 use strict;
 use HTTP::Tiny;
 use vars qw($VERSION %IRSSI);
+use JSON::PP;
+
+my $json = JSON::PP->new->allow_nonref;
 
 use Irssi;
 $VERSION = '0.0.1';
 %IRSSI = (
 	name => 'mercurius',
-	authors => 'Piotr Zalewa',
+	authors => 'Piotr Zalewa, Marco Castelluccio',
 	contact => 'zalun@mozilla.com',
 	url => 'https://piotr.zalewa.info/',
 	description => 'Send mentiones to mercurius notification server.',
@@ -181,7 +184,13 @@ sub notify {
 		my ($text) = @_;
 		my $url = $host . '/notify';
 		my $http = HTTP::Tiny->new();
-		my $data = '{"token": "' . $token . '","payload": {"title": "IRSSI", "body": "'.$text.'"}}';
+		my $data = encode_json {
+			"token" => $token,
+		    "payload" => {
+				"title" => "IRSSI", 
+				"body" => $text
+			}
+		};
 		my $response = $http->request('POST', $url, {
 				content => $data,
 				headers => {
