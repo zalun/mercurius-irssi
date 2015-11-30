@@ -159,7 +159,7 @@ sub priv_msg {
 			return;
 		}
 		$priv_notified = 1;
-		notify('' . $server->{tag} . ' ' . $nick . ' ' . $msg);
+		notify($nick . ': ' . $msg);
 	}
 }
 
@@ -170,8 +170,7 @@ sub hilight {
 	if ($enabled) {
 		my ($dest, $text, $stripped) = @_;
 		if ($dest->{level} & MSGLEVEL_HILIGHT) {
-			my $server = $dest->{server};
-			my $response = notify($server->{tag} . ':' . $dest->{target} . ' ' . $stripped);
+			notify($dest->{target} . ' ' . $stripped);
 		}
 	}
 }
@@ -191,6 +190,7 @@ sub notify {
 				"body" => $text
 			}
 		};
+		print "DEBUG: " . $url . "\n" . $data;
 		my $response = $http->request('POST', $url, {
 				content => $data,
 				headers => {
