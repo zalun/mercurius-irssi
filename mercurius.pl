@@ -176,7 +176,7 @@ sub hilight {
 }
 
 #
-#	write to file
+#	send notification
 #
 sub notify {
 	if ($enabled) {
@@ -185,6 +185,7 @@ sub notify {
 		my $http = HTTP::Tiny->new();
 		my $data = encode_json {
 			"token" => $token,
+			"client" => "IRSSI",
 		    "payload" => {
 				"title" => "IRSSI", 
 				"body" => $text
@@ -193,9 +194,7 @@ sub notify {
 		print "DEBUG: " . $url . "\n" . $data;
 		my $response = $http->request('POST', $url, {
 				content => $data,
-				headers => {
-	   				"Content-Type" => "application/json",
-	  			}
+				headers => {"Content-Type" => "application/json"}
 			}
 		);
 		if (not $response->{success}) {
